@@ -199,7 +199,8 @@ formdesigner.ui = (function () {
             toolbar.append(savebut);
 
             savebut.button().click(function () {
-                formdesigner.controller.sendXForm();
+                //formdesigner.controller.sendXForm();
+                formdesigner.controller.showGeneratedItextJSON();
             });
 
         })();

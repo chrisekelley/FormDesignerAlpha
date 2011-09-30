@@ -363,10 +363,23 @@ formdesigner.controller = (function () {
     var generateXForm = function () {
 
         function showFormInLightBox () {
+        	var input = $('#fd-source'),
+        	button = $('<button id ="fd-parsexls-button">Close Window</button>');
+        	button.button({
+        		icons: {
+        			primary : '.ui-icon-closethick'
+        		}
+        	})
             var output = $('#fd-source');
             if(formdesigner.controller.XFORM_STRING){
                 output.val(formdesigner.controller.XFORM_STRING);
                 $('#inline').click();
+                input.after(button);
+                button.show();
+                button.click(function () {
+                    $.fancybox.close();
+                    $(this).remove();
+                });
             }
         }
 
@@ -487,7 +500,99 @@ formdesigner.controller = (function () {
 
         return out;
     }
+    var generateItextJSON = function () {
+    	var idata, row, iID, lang, form, val, Itext,
+    	out = '';
+    	Itext = formdesigner.model.Itext;
+    	idata = Itext.getAllData();
+    	console.log("idata: " + JSON.stringify(idata));
+    	//Form = formdesigner.controller.form;
+    	//controlTree = formdesigner.controller.form.controlTree;
+    	console.log("controltree: " + formdesigner.controller.form.controlTree.printTree());
+    	//bList = formdesigner.controller.form.getBindList();
+    	console.log("getBindList: " + formdesigner.controller.form.getBindList());
+
+    	var dataTree = formdesigner.controller.form.dataTree;
+    	 var MT,
+         //vars populated by populateVariables()
+         bEl,cons,consMsg,nodeset,type,relevant,required,calc,
+         i, attrs, j;
+    	var bList = formdesigner.controller.form.getBindList();
+    	var sanitizeXML = function(xmlString) {
+    		if(!xmlString) {
+    			return;
+    		}
+    		
+    		return xmlString.replace(/\>/g, "&gt;").replace(/\</g, "&lt;");
+    	};
+    	
+    	function createBindRequiredAttribute(req) {
+			if(req === true) {
+				return 'true()';
+			}else if (req === false) {
+				return 'false()';
+			} else {
+				return null;
+			}
+		};
+		
+        function populateVariables (MT){
+            bEl = MT.mug.properties.bindElement;
+            if (bEl) {
+                cons = sanitizeXML(bEl.properties.constraintAttr);
+                consMsg = bEl.properties.constraintMsgAttr;
+                nodeset = dataTree.getAbsolutePath(MT);
+                type = bEl.properties.dataType.replace("xsd:","");
+                relevant = sanitizeXML(bEl.properties.relevantAttr);
+                required = sanitizeXML(createBindRequiredAttribute(bEl.properties.requiredAttr));
+                calc = sanitizeXML(bEl.properties.calculateAttr);
+                //preld = bEl.properties.preload;
+                //preldParams = bEl.properties.preloadParams;
+                return {
+                    nodeset: nodeset,
+                    'type': type,
+                    constraint: cons,
+                    constraintMsg: consMsg,
+                    relevant: relevant,
+                    required: required,
+                    calculate: calc,
+                    //preload: preld,
+                    //preloadParams: preldParams
+                }
+            } else {
+                return null;
+            }
+        }
+        var formDef = { _id : formdesigner.controller.form.formID, label: formdesigner.controller.form.formName};
+        var form_elements = [];
+        var j = 0;
+		for (i in bList) {
+			if(bList.hasOwnProperty(i)){
+				MT = bList[i];
+				attrs = populateVariables(MT);
+				console.log("bList MT: " + MT + " attrs: " + JSON.stringify(attrs));
+				var form_element =  {
+			            "label": idata["en"][MT.mug.properties.dataElement.properties.nodeID]["default"],
+			            "datatype": attrs["type"],
+			            "identifier": MT.mug.properties.dataElement.properties.nodeID,
+			            //"identifier": attrs["nodeset"],
+			        }
+				form_elements[j] = form_element
+				j++;
+			}
+		}
+		formDef["form_elements"] = form_elements;
+        //form_elements
+    	//console.log("formdesigner: " + JSON.stringify(formdesigner, undefined, 2));
+    	//out = JSON.stringify(idata);
+    	//out = JSON.stringify(formdesigner, undefined, 5);
+    	out = JSON.stringify(formDef, undefined, 5);
+    	//out = JSON.stringify(controlTree);
+    	return out;
+    }
+    
     that.generateItextXLS = generateItextXLS;
+    that.generateItextJSON = generateItextJSON;
 
     var showLoadItextFromClipboard = function () {
         var input = $('#fd-source'),
@@ -511,15 +616,55 @@ formdesigner.controller = (function () {
     that.showLoadItextFromClipboard = showLoadItextFromClipboard;
 
     var showGeneratedItextXLS = function () {
+    	var input = $('#fd-source'),
+    	button = $('<button id ="fd-parsexls-button">Close Window</button>');
+    	button.button({
+    		icons: {
+    			primary : '.ui-icon-closethick'
+    		}
+    	})
         var source = $('#fd-source');
 
         source.val(formdesigner.controller.generateItextXLS());
 
         $('#inline').click();
-        
+        input.after(button);
+        button.show();
+
+        button.click(function () {
+            $.fancybox.close();
+            $(this).remove();
+        });
 
     };
+    
+    var showGeneratedItextJSON = function () {
+    	var input = $('#fd-source'),
+    	button = $('<button id ="fd-parsexls-button">Close Window</button>');
+    	button.button({
+    		icons: {
+    			primary : '.ui-icon-closethick'
+    		}
+    	})
+    	var source = $('#fd-source');
+    	
+    	var db = $.urlParam('db');
+    	console.log("db: " + db);
+    	
+    	source.val(formdesigner.controller.generateItextJSON());
+    	
+    	$('#inline').click();
+    	input.before(button);
+    	button.show();
+    	
+    	button.click(function () {
+    		$.fancybox.close();
+    		$(this).remove();
+    	});
+    	
+    };
     that.showGeneratedItextXLS = showGeneratedItextXLS;
+    that.showGeneratedItextJSON = showGeneratedItextJSON;
 
     var setFormName = function (name) {
         formdesigner.controller.form.formName = name;

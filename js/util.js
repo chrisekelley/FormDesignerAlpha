@@ -790,3 +790,14 @@ formdesigner.util = (function(){
     return that;
 
 }());
+
+// http://stackoverflow.com/questions/901115/get-query-string-values-in-javascript/2480180#2480180
+
+$.urlParam = function(name){
+    var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    if (!results)
+    { 
+        return 0; 
+    }
+    return results[1] || 0;
+}
